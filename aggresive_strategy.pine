@@ -1,0 +1,33 @@
+//@version=4
+strategy("Aggressive Trading Strategy", shorttitle="ATS", overlay=true)
+
+// Input parameters
+rsi_len = input(14, title="RSI Period", minval=1)
+overbought = input(70, title="Overbought Level")
+oversold = input(30, title="Oversold Level")
+src = close
+maShortPeriod = input(9, title="Short MA Period", minval=1)
+maLongPeriod = input(21, title="Long MA Period", minval=1)
+
+// RSI calculation
+rsi_val = rsi(src, rsi_len)
+
+// Moving Averages calculation
+maShort = sma(src, maShortPeriod)
+maLong = sma(src, maLongPeriod)
+
+// Entry conditions
+enterLong = crossover(maShort, maLong) and rsi_val < oversold
+enterShort = crossunder(maShort, maLong) and rsi_val > overbought
+
+// Plotting
+plot(maShort, title="Short MA", color=color.blue, linewidth=2)
+plot(maLong, title="Long MA", color=color.red, linewidth=2)
+hline(overbought, "Overbought", color=color.red)
+hline(oversold, "Oversold", color=color.green)
+bgcolor(enterLong ? color.green : na, transp=90)
+bgcolor(enterShort ? color.red : na, transp=90)
+
+// Strategy
+strategy.entry("Long", strategy.long, when=enterLong)
+strategy.entry("Short", strategy.short, when=enterShort)
