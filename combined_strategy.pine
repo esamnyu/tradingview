@@ -1,0 +1,54 @@
+//@version=4
+study("Combined Strategy", shorttitle="CS", overlay=true)
+
+// Input parameters
+emaShortPeriod = input(9, title="Short EMA Period", minval=1)
+emaLongPeriod = input(21, title="Long EMA Period", minval=1)
+bbLength = input(20, title="Bollinger Bands Length")
+bbMult = input(2.0, title="Bollinger Bands Multiplier")
+macdShort = input(12, title="MACD Short Period")
+macdLong = input(26, title="MACD Long Period")
+macdSignal = input(9, title="MACD Signal Period")
+length = input(20, title="TTM Squeeze Length")
+
+// EMA Calculation
+emaShort = ema(close, emaShortPeriod)
+emaLong = ema(close, emaLongPeriod)
+
+// VWAP Calculation
+vwap = cum(close * volume) / cum(volume)
+
+// Bollinger Bands Calculation
+basis = sma(close, bbLength)
+dev = bbMult * stdev(close, bbLength)
+upperBB = basis + dev
+lowerBB = basis - dev
+
+// TTM Squeeze Calculation
+highestHigh = highest(high, length)
+lowestLow = lowest(low, length)
+K = (highestHigh + lowestLow) / 2
+mult = 0.25
+highestClose = highest(close, length)
+lowestClose = lowest(close, length)
+range = highestClose - lowestClose
+atr = sma(tr, length)
+sDev = (mult * range) / atr
+squeeze = close > (K + sDev)
+
+// MACD Calculation
+macdLine = ema(close, macdShort) - ema(close, macdLong)
+signalLine = sma(macdLine, macdSignal)
+
+// Entry signals
+enterLong = crossover(emaShort, emaLong) and close > vwap and close > lowerBB and squeeze and crossover(macdLine, signalLine)
+enterShort = crossunder(emaShort, emaLong) and close < vwap and close < upperBB and not squeeze and crossunder(macdLine, signalLine)
+
+// Plotting
+plot(emaShort, title="Short EMA", color=color.blue, linewidth=2)
+plot(emaLong, title="Long EMA", color=color.red, linewidth=2)
+plot(vwap, title="VWAP", color=color.orange, linewidth=2)
+plot(upperBB, title="Upper Bollinger Band", color=color.green, linewidth=1)
+plot(lowerBB, title="Lower Bollinger Band", color=color.green, linewidth=1)
+bgcolor(enterLong ? color.green : na, transp=90)
+bgcolor(enterShort ? color.red : na, transp=90)
